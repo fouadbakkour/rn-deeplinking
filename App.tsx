@@ -1,118 +1,129 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import * as React from 'react';
 import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
+  Button,
   View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
 } from 'react-native';
-
+import {NavigationContainer} from '@react-navigation/native';
 import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+  createNativeStackNavigator,
+  NativeStackScreenProps,
+} from '@react-navigation/native-stack';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+/**
+ * Stack Navigator Screens Props
+ */
+type RootStackParamList = {
+  Home: undefined;
+  Details: {id: number};
+};
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+/**
+ * Stack Navigator
+ */
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+/**
+ * Data
+ */
+const groceryItems = [
+  {id: 1, name: 'Apples'},
+  {id: 2, name: 'Bananas'},
+  {id: 3, name: 'Oranges'},
+  {id: 4, name: 'Milk'},
+  {id: 5, name: 'Bread'},
+];
+
+/**
+ * Screens
+ */
+const HomeScreen = ({
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Home'>) => {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
+    <View style={styles.container}>
+      <Text>Grocery List</Text>
+      <FlatList
+        style={styles.list}
+        data={groceryItems}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({item}) => (
+          <TouchableOpacity
+            style={{padding: 10, borderBottomWidth: 1}}
+            onPress={() => navigation.navigate('Details', {id: item.id})}>
+            <Text>{item.name}</Text>
+          </TouchableOpacity>
+        )}
+      />
     </View>
   );
-}
+};
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+const DetailsScreen = ({
+  route,
+  navigation,
+}: NativeStackScreenProps<RootStackParamList, 'Details'>) => {
+  const {id} = route.params;
+  // eslint-disable-next-line eqeqeq
+  const item = groceryItems.find(object => object.id == id);
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text>Item: {item ? item.name : 'Not Found'}</Text>
+      <Button title="Back" onPress={() => navigation.goBack()} />
+    </View>
   );
-}
+};
 
+/**
+ * StyleSheet
+ */
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  list: {
+    width: '100%',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
+  button: {
+    padding: 10,
+    borderBottomWidth: 1,
   },
 });
 
-export default App;
+/**
+ * Linking Configuration xcrun simctl openurl booted "mycoolapp://home"
+ * TEST: xcrun simctl openurl booted "mycoolapp://details/1"
+ * TEST: xcrun simctl openurl booted "mycoolapp://home"
+ */
+const linking = {
+  // Prefixes accepted by the navigation container, should match the added schemes
+  prefixes: ['mycoolapp://'],
+  // Route config to map uri paths to screens
+  config: {
+    // Initial route name to be added to the stack before any further navigation,
+    // should match one of the available screens
+    initialRouteName: 'Home' as const,
+    screens: {
+      // mycoolapp://home -> HomeScreen
+      Home: 'home',
+      // mycoolapp://details/1 -> DetailsScreen with param id: 1
+      Details: 'details/:id',
+    },
+  },
+};
+
+export default function App() {
+  return (
+    <NavigationContainer linking={linking}>
+      <Stack.Navigator initialRouteName="Home">
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Details" component={DetailsScreen} />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
